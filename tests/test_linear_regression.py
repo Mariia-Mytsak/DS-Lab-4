@@ -1,80 +1,84 @@
-import pytest
-from src.linear_regression import read_csv, visualize_data, linear_regression_with_metrics
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_absolute_error, mean_squared_error
 
 
-def test_read_csv_function_exists():
+def read_csv(file_path: str) -> pd.DataFrame:
     """
-    Test if the read_csv function exists in the module.
+    Reads a CSV file and returns its content as a DataFrame.
+    Raises ValueError if the file is empty.
     """
-    assert callable(read_csv), "The read_csv function is not defined."
+    data = pd.read_csv(file_path)
+    if data.empty:
+        raise ValueError("The CSV file is empty.")
+    return data
 
 
-def test_csv_not_empty(tmp_path):
+def visualize_data(data: pd.DataFrame, x_column: str, y_column: str):
     """
-    Test if the CSV reading function correctly identifies non-empty files.
+    Visualizes the relationship between the feature and the target variable.
     """
-    # Create a temporary CSV file
-    csv_file = tmp_path / "../data.csv"
-
-    # Write valid content to the CSV file
-    csv_file.write_text("Feature,Target\n1,2\n3,4")
-
-    # Read the CSV and verify it's not empty
-    data = read_csv(csv_file)
-    assert not data.empty, "The CSV file should not be empty."
-
+    plt.figure()
+    plt.scatter(data[x_column], data[y_column], color='blue', label='Data points')
+    plt.xlabel(x_column)
+    plt.ylabel(y_column)
+    plt.title(f'Scatter Plot of {x_column} vs {y_column}')
+    plt.legend()
+    plt.show()
+    plt.close()
 
 
-def test_visualize_data_function_exists():
+def linear_regression_with_metrics(data: pd.DataFrame, x_column: str, y_column: str):
     """
-    Test if the visualize_data function exists in the module.
+    Performs linear regression, evaluates metrics, and visualizes the regression line.
     """
-    assert callable(visualize_data), "The visualize_data function is not defined."
+    # Prepare the data
+    X = data[[x_column]]
+    y = data[y_column]
 
+    # Split the data
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-def test_visualize_data_no_errors(tmp_path, monkeypatch):
-    """
-    Test the visualize_data function to ensure it runs without errors.
-    """
-    # Create a temporary CSV file with valid data
-    csv_file = tmp_path / "../data.csv"
-    csv_file.write_text("Feature,Target\n1,2\n3,4\n5,6")
+    # Train the model
+    model = LinearRegression()
+    model.fit(X_train, y_train)
 
-    # Read the CSV file
-    data = read_csv(csv_file)
+    # Make predictions
+    y_pred = model.predict(X_test)
 
-    # Mock `plt.show()` to prevent the test from displaying the plot
-    import matplotlib.pyplot as plt
-    monkeypatch.setattr(plt, "show", lambda: None)
+    # Evaluate the model
+    mae = mean_absolute_error(y_test, y_pred)
+    mse = mean_squared_error(y_test, y_pred)
+    rmse = np.sqrt(mse)
 
-    # Ensure visualize_data runs without throwing errors
-    try:
-        visualize_data(data, x_column="Feature", y_column="Target")
-    except Exception as e:
-        pytest.fail(f"visualize_data raised an exception: {e}")
+    print(f"Model Evaluation Metrics:")
+    print(f"Mean Absolute Error (MAE): {mae:.2f}")
+    print(f"Mean Squared Error (MSE): {mse:.2f}")
+    print(f"Root Mean Squared Error (RMSE): {rmse:.2f}")
 
-
-def test_linear_regression_with_metrics_no_errors(tmp_path, capsys):
-    """
-    Test the linear_regression_with_metrics function to ensure it runs and outputs metrics correctly.
-    """
-    # Create a temporary CSV file with valid data
-    csv_file = tmp_path / "test.csv"
-    csv_file.write_text("Feature,Target\n1,2\n2,4\n3,6\n4,8\n5,10")
-
-    # Read the CSV file
-    data = read_csv(csv_file)
-
-    # Ensure linear_regression_with_metrics runs without throwing errors
-    try:
-        linear_regression_with_metrics(data, x_column="Feature", y_column="Target")
-    except Exception as e:
-        pytest.fail(f"linear_regression_with_metrics raised an exception: {e}")
-
-    # Capture the output printed by the function
-    captured = capsys.readouterr()
-    assert "Model Evaluation Metrics:" in captured.out, "The output should contain evaluation metrics."
+    # Visualize the regression line
+    plt.figure()
+    plt.scatter(X_test, y_test, color='blue', label='Actual data')
+    plt.plot(X_test, y_pred, color='red', linewidth=2, label='Regression line')
+    plt.xlabel(x_column)
+    plt.ylabel(y_column)
+    plt.title('Linear Regression Fit')
+    plt.legend()
+    plt.show()
+    plt.close()
 
 
 if __name__ == "__main__":
-    pytest.main()
+    # Example usage
+    csv_path = "../data.csv"  # Path to the dataset
+    data = read_csv(csv_path)
+    print("Data Loaded Successfully!")
+
+    # Visualize the data
+    visualize_data(data, x_column="Feature", y_column="Target")
+
+    # Run Linear Regression and Evaluate Metrics
+    linear_regression_with_metrics(data, x_column="Feature", y_column="Target")

@@ -34,6 +34,14 @@ def train_polynomial_regression(X: np.array, y: np.array, degree: int):
     Returns:
     tuple: Trained model and polynomial feature transformer.
     """
+    if X.ndim == 1:
+        X = X.reshape(-1, 1)
+
+    poly = PolynomialFeatures(degree=degree)
+    X_poly = poly.fit_transform(X)
+
+    model = LinearRegression()
+    model.fit(X_poly, y)
 
     return model, poly
 
@@ -50,7 +58,10 @@ def predict_prices(model: LinearRegression, poly: PolynomialFeatures, X: np.arra
     Returns:
     np.array: Predicted prices.
     """
+    if X.ndim == 1:
+        X = X.reshape(-1, 1)
 
+    X_poly = poly.transform(X)
     return model.predict(X_poly)
 
 
@@ -65,6 +76,9 @@ def evaluate_model(y_true: np.array, y_pred: np.array):
     Returns:
     dict: Evaluation metrics.
     """
+    mae = mean_absolute_error(y_true, y_pred)
+    mse = mean_squared_error(y_true, y_pred)
+    rmse = np.sqrt(mse)
 
     return {"MAE": mae, "MSE": mse, "RMSE": rmse}
 
@@ -79,6 +93,7 @@ def visualize_data(X: np.array, y: np.array, model: LinearRegression, poly: Poly
     model (LinearRegression): Trained polynomial regression model.
     poly (PolynomialFeatures): Polynomial feature transformer.
     """
+    plt.figure()
     X_plot = np.linspace(X.min(), X.max(), 100)
     y_plot = predict_prices(model, poly, X_plot)
 
@@ -89,6 +104,7 @@ def visualize_data(X: np.array, y: np.array, model: LinearRegression, poly: Poly
     plt.title("Polynomial Regression: House Size vs Price")
     plt.legend()
     plt.show()
+    plt.close()
 
 
 if __name__ == "__main__":
